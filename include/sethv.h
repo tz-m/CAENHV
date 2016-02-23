@@ -13,6 +13,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 #include <iomanip>
 
 #include "CAENVMElib.h"
@@ -20,6 +21,7 @@
 extern uint32_t hv_data;
 extern int32_t handle;
 extern std::vector<int> enable_channel;
+extern std::string config_file;
 
 std::string status(int ch, int board);
 int setconfig();
