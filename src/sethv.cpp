@@ -19,44 +19,37 @@ int monitor()
     }
 
   bool ready = true;
+  int num_not_ready = 0;
   bool off = true;
   for (int ch = 0; ch < 6; ch++)
     {
-      printf("V6521N -- CH%i",ch);
-      printf(" -- %6.1f V",get_voltage_v6521n(ch));
-      printf(" -- %6.3f uA",get_current_v6521n(ch));
       std::string stat = status(ch,-1);
-      printf(" -- %s\n",stat.c_str());
-      std::string::size_type on = stat.find("ON");
-      if (on!=std::string::npos)
+      ready = (!strcmp(stat.c_str(),"ON ") || !strcmp(stat.c_str(),"OFF"));
+      if (!ready)
 	{
-	  stat.replace(on,on+3,"");
-	  if (stat.length() != 0) ready = false;
+	  num_not_ready++;
+	  printf("\x1b[37;41m V6521N -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39;49m\n",ch,get_voltage_v6521n(ch),get_current_v6521n(ch),stat.c_str());
 	}
-      if (stat != "OFF")
+      else
 	{
-	  off = false;
-	}
+	  printf("\x1b[32m V6521N -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39m\n",ch,get_voltage_v6521n(ch),get_current_v6521n(ch),stat.c_str());
+	}    
     }  
   for (int ch = 0; ch < 6; ch++)
     {
-      printf("V6521P -- CH%i",ch);
-      printf(" -- %6.1f V",get_voltage_v6521p(ch));
-      printf(" -- %6.3f uA",get_current_v6521p(ch));
       std::string stat = status(ch,1);
-      printf(" -- %s\n",stat.c_str());
-      std::string::size_type on = stat.find("ON");
-      if (on!=std::string::npos)
-        {
-          stat.replace(on,on+3,"");
-          if (stat.length() != 0) ready = false;
-        }
-      if (stat != "OFF")
+      ready = (!strcmp(stat.c_str(),"ON ") || !strcmp(stat.c_str(),"OFF"));
+      if (!ready)
 	{
-          off = false;
-	}
+          num_not_ready++;
+	  printf("\x1b[37;41m V6521P -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39;49m\n",ch,get_voltage_v6521p(ch),get_current_v6521p(ch),stat.c_str());
+        }
+      else
+	{
+	  printf("\x1b[32m V6521P -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39m\n",ch,get_voltage_v6521p(ch),get_current_v6521p(ch),stat.c_str());
+        }
     }
-
+ 
   if (!ready) return 1;
   if (off) return 2;
   return 0;
@@ -537,77 +530,78 @@ int powerup()
 
 int main(int argc, char *argv[]) 
 {
-  for (int i = 1; i < argc; i++)
+  int i = 1;
+  int status = 1;
+
+  if (!strcmp(argv[i], "--setconfig"))
     {
-      if (!strcmp(argv[i], "--setconfig"))
+      if (i+1 == argc)
 	{
-	  if (i+1 == argc)
-	    {
-	      printf("Feed me a config file!\n");
-	      return 1;
-	    }
-	  else
-	    {
-	      config_file = (std::string)argv[i+1];
-	      std::ifstream src(config_file,std::ios::binary);
-	      std::ofstream dst("current.conf",std::ios::binary);
-	      dst << src.rdbuf();
-	    }
-	  return setconfig();
+	  printf("Feed me a config file!\n");
+	  status = 1;
 	}
-      if (!strcmp(argv[i], "--powerdown"))
+      else
 	{
-	  return powerdown();
+	  config_file = (std::string)argv[i+1];
+	  std::ifstream src(config_file,std::ios::binary);
+	  std::ofstream dst("current.conf",std::ios::binary);
+	  dst << src.rdbuf();
 	}
-      if (!strcmp(argv[i], "--powerup"))
-	{
-	  if (i+1 == argc)
-	    {
-	      config_file = "current.conf";
-	      if (setconfig()) return 1;
-	    }
-	  else
-	    {
-	      config_file = (std::string)argv[i+1];
-	      if (setconfig()) return 1;
-	    }
-	  return powerup();
-	}
-      if (!strcmp(argv[i], "--getconfig"))
-	{
-	  if (i+1 == argc)
-	    {
-	      config_file = "current.conf";
-	      if (setconfig()) return 1;
-	    }
-	  else
-	    {
-	      config_file = (std::string)argv[i+1];
-	      if (setconfig()) return 1;
-	    }
-	  return getconfig();
-	}
-      if (!strcmp(argv[i], "--monitor"))
-	{
-	  return monitor();
-	}
-      if (!strcmp(argv[i], "--kill"))
-	{
-	  return powerdown();
-	}
-      
+      status = setconfig();
     }
-  
-  printf("Usage: sethv [command] [optional parameters]\n");
-  printf("  Commands:\n");
-  printf("    --setconfig   Requires parameter pointing to the location of the\n");
-  printf("                  configuration file.\n");
-  printf("    --powerdown   Ramp down voltages and turn channels off.\n");
-  printf("    --powerup     Turn channels on and ramp up voltages.\n");
-  printf("    --getconfig   Read the pre-set parameters from VME.\n");
-  printf("    --monitor     Read the instantaneous parameters from VME\n");
-  printf("                  (e.g. voltage, current, etc.).\n");
-  printf("    --kill        Ramp down voltages immediately.\n");
-  return 1;
+  else if (!strcmp(argv[i], "--powerdown"))
+    {
+      status = powerdown();
+    }
+  else if (!strcmp(argv[i], "--powerup"))
+    {
+      if (i+1 == argc)
+	{
+	  config_file = "current.conf";
+	}
+      else
+	{
+	  config_file = (std::string)argv[i+1];
+	}
+      status = setconfig();
+      if (!status) status = powerup();
+    }
+  else if (!strcmp(argv[i], "--getconfig"))
+    {
+      if (i+1 == argc)
+	{
+	  config_file = "current.conf";
+	}
+      else
+	{
+	  config_file = (std::string)argv[i+1];
+	}
+      status = setconfig();
+      if (!status) status = getconfig(); 
+    }
+  else if (!strcmp(argv[i], "--monitor"))
+    {
+      status = monitor();
+    }
+  else if (!strcmp(argv[i], "--kill"))
+    {
+      status = powerdown();
+    }
+  else
+    {
+      printf("Usage: sethv [command] [optional parameters]\n");
+      printf("  Commands:\n");
+      printf("    --setconfig   Requires parameter pointing to the location of the\n");
+      printf("                  configuration file.\n");
+      printf("    --powerdown   Ramp down voltages and turn channels off.\n");
+      printf("    --powerup     Turn channels on and ramp up voltages.\n");
+      printf("    --getconfig   Read the pre-set parameters from VME.\n");
+      printf("    --monitor     Read the instantaneous parameters from VME\n");
+      printf("                  (e.g. voltage, current, etc.).\n");
+      printf("    --kill        Ramp down voltages immediately.\n");
+      status = 1;
+    }
+      
+  return status;
 }
 
