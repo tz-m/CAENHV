@@ -29,6 +29,7 @@ int powerdown();
 int powerup();
 int getconfig();
 int monitor();
+int rampspeed(int speed);
 
 struct STATUS_REGISTER {
   unsigned ON:1;

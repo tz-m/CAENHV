@@ -20,7 +20,6 @@ int monitor()
 
   bool ready = true;
   int num_not_ready = 0;
-  bool off = true;
   for (int ch = 0; ch < 6; ch++)
     {
       std::string stat = status(ch,-1);
@@ -32,7 +31,7 @@ int monitor()
 	}
       else
 	{
-	  printf("\x1b[32m V6521N -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39m\n",ch,get_voltage_v6521n(ch),get_current_v6521n(ch),stat.c_str());
+	  printf("\x1b[32;40m V6521N -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39;49m\n",ch,get_voltage_v6521n(ch),get_current_v6521n(ch),stat.c_str());
 	}    
     }  
   for (int ch = 0; ch < 6; ch++)
@@ -46,12 +45,11 @@ int monitor()
         }
       else
 	{
-	  printf("\x1b[32m V6521P -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39m\n",ch,get_voltage_v6521p(ch),get_current_v6521p(ch),stat.c_str());
+	  printf("\x1b[32;40m V6521P -- CH%i -- %6.1f V -- %6.3f uA -- %s\x1b[39;49m\n",ch,get_voltage_v6521p(ch),get_current_v6521p(ch),stat.c_str());
         }
     }
  
-  if (!ready) return 1;
-  if (off) return 2;
+  if (num_not_ready>0) return 1;
   return 0;
 }
 
@@ -415,6 +413,44 @@ int setconfig()
   return 0;
 }
 
+int rampspeed(int speed)
+{
+  CVBoardTypes vme_board = cvV1718;
+  CVErrorCodes ret;
+
+  ret = CAENVME_Init(vme_board, 0, 0, &handle);
+  if (ret != cvSuccess)
+    {
+      printf("\n\n Error opening V1718! \n\n");
+      CAENVME_End(handle);
+      return 1;
+    }
+  
+  bool success = true;
+  for (uint32_t chan = 0; chan < 6; chan++)
+    {
+      ret = set_ramp_up_v6521n(chan,(uint32_t)speed);
+      if (ret != cvSuccess)
+	{
+	  printf("\nBad ramp up or bad channel\n");
+	  success = false;
+	}
+    }
+  for (uint32_t chan = 0; chan < 6; chan++)
+    {
+      ret = set_ramp_up_v6521p(chan,(uint32_t)speed);
+      if (ret != cvSuccess)
+        {
+          printf("\nBad ramp up or bad channel\n");
+          success = false;
+        }
+    }
+  
+  CAENVME_End(handle);
+  if (!success) return 1;
+  return 0;
+}
+
 int powerdown()
 {
   CVBoardTypes vme_board = cvV1718;
@@ -587,6 +623,18 @@ int main(int argc, char *argv[])
     {
       status = powerdown();
     }
+  else if (!strcmp(argv[i], "--rampspeed"))
+    {
+      if (i+1 != argc)
+	{
+	  std::istringstream ss(argv[i+1]);
+	  int speed;
+	  if (ss >> speed)
+	    {
+	      status = rampspeed(speed);
+	    }
+	}
+    }
   else
     {
       printf("Usage: sethv [command] [optional parameters]\n");
@@ -599,6 +647,7 @@ int main(int argc, char *argv[])
       printf("    --monitor     Read the instantaneous parameters from VME\n");
       printf("                  (e.g. voltage, current, etc.).\n");
       printf("    --kill        Ramp down voltages immediately.\n");
+      printf("    --rampspeed   Set ramp up speed (in V/s).\n");
       status = 1;
     }
       
