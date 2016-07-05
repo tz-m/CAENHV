@@ -5,19 +5,24 @@ uint32_t hv_data;
 std::vector<int> enable_channel;
 std::string config_file;
 
-int monitor()
+int init()
 {
   CVBoardTypes vme_board = cvV1718;
   CVErrorCodes ret;
-
-  ret = CAENVME_Init(vme_board, 0, 0, &handle);
+  ret = CAENVME_Init(vme_board, V1718_USB_PORT, V1718_USB_PORT, &handle);
   if (ret != cvSuccess)
     {
       printf("\n\n Error opening V1718! \n\n");
       CAENVME_End(handle);
-      return 1;
+      return 0;
     }
-
+  return 1;
+}
+  
+int monitor()
+{
+  if (!init()) return 1;
+  
   bool ready = true;
   int num_not_ready = 0;
   for (int ch = 0; ch < 6; ch++)
@@ -56,16 +61,7 @@ int monitor()
 
 int getconfig()
 {
-  CVBoardTypes vme_board = cvV1718;
-  CVErrorCodes ret;
-
-  ret = CAENVME_Init(vme_board, 0, 0, &handle);
-  if (ret != cvSuccess)
-    {
-      printf("\n\n Error opening V1718! \n\n");
-      CAENVME_End(handle);
-      return 1;
-    }
+  if (!init()) return 1;
   
   std::string BOARD,CHNUM,VSET,ISET,
     PW,TRIP_TIME,SVMAX,RAMP_DOWN,
@@ -215,16 +211,7 @@ std::string status(int ch, int board)
 
 int setconfig()
 {
-  CVBoardTypes vme_board = cvV1718;
-  CVErrorCodes ret;
-
-  ret = CAENVME_Init(vme_board, 0, 0, &handle);
-  if (ret != cvSuccess)
-    {
-      printf("\n\n Error opening V1718! \n\n");
-      CAENVME_End(handle);
-      return 1;
-    }
+  if (!init()) return 1;
 
   std::string BOARD,CHNUM,VSET,ISET,
     PW,TRIP_TIME,SVMAX,RAMP_DOWN,
@@ -235,6 +222,8 @@ int setconfig()
 
   bool success = true;
 
+  CVErrorCodes ret;
+  
   if (configfile.is_open())
     {
       while (getline(configfile,line))
@@ -416,17 +405,8 @@ int setconfig()
 
 int rampspeed(int speed)
 {
-  CVBoardTypes vme_board = cvV1718;
+  if (!init()) return 1;
   CVErrorCodes ret;
-
-  ret = CAENVME_Init(vme_board, 0, 0, &handle);
-  if (ret != cvSuccess)
-    {
-      printf("\n\n Error opening V1718! \n\n");
-      CAENVME_End(handle);
-      return 1;
-    }
-  
   bool success = true;
   for (uint32_t chan = 0; chan < 6; chan++)
     {
@@ -454,17 +434,8 @@ int rampspeed(int speed)
 
 int powerdown()
 {
-  CVBoardTypes vme_board = cvV1718;
+  if (!init()) return 1;
   CVErrorCodes ret;
-
-  ret = CAENVME_Init(vme_board, 0, 0, &handle);
-  if (ret != cvSuccess)
-    {
-      printf("\n\n Error opening V1718! \n\n");
-      CAENVME_End(handle);
-      return 1;
-    }
-
   bool success = true;
   for (int ch = 0; ch < 6; ch++)
     {
@@ -491,16 +462,7 @@ int powerdown()
 
 int powerup()
 {
-  CVBoardTypes vme_board = cvV1718;
-  CVErrorCodes ret;
-
-  ret = CAENVME_Init(vme_board, 0, 0, &handle);
-  if (ret != cvSuccess)
-    {
-      printf("\n\n Error opening V1718! \n\n");
-      CAENVME_End(handle);
-      return 1;
-    }
+  if (!init()) return 1;
 
   std::string BOARD,CHNUM,VSET,ISET,
     PW,TRIP_TIME,SVMAX,RAMP_DOWN,
@@ -510,7 +472,7 @@ int powerup()
   std::ifstream configfile (config_file.c_str(),std::ifstream::in);
 
   bool success = true;
-
+  CVErrorCodes ret;
   if (configfile.is_open())
     {
       while (getline(configfile,line))

@@ -1,6 +1,8 @@
 #ifndef SETHV_H
 #define SETHV_H
 
+#define V1718_USB_PORT 1
+
 #include "V6521N.h"
 #include "V6521P.h"
 
@@ -23,6 +25,7 @@ extern int32_t handle;
 extern std::vector<int> enable_channel;
 extern std::string config_file;
 
+int init();
 std::string status(int ch, int board);
 int setconfig();
 int powerdown();
