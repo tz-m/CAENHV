@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-pthread -std=c++11 -Wno-deprecated-declarations -m64 -g -I./include -L/usr/lib/CAEN -I/usr/include/CAEN -Wall
+CXXFLAGS=-pthread -std=c++11 -m64 -g -I./include -L/usr/lib/CAEN -I/usr/include/CAEN -Wall
 LDFLAGS=-m64
 LDLIBS=-pthread -lm -ldl -rdynamic -lCAENVME
 SRCDIR=./src
