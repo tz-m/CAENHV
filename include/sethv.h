@@ -1,7 +1,7 @@
 #ifndef SETHV_H
 #define SETHV_H
 
-#define V1718_USB_PORT 1
+#define V1718_USB_PORT 0
 
 #include "V6521N.h"
 #include "V6521P.h"

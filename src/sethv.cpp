@@ -28,7 +28,7 @@ int monitor()
   for (int ch = 0; ch < 6; ch++)
     {
       std::string stat = status(ch,-1);
-      ready = (!strcmp(stat.c_str(),"ON ") || !strcmp(stat.c_str(),"OFF"));
+      ready = (!strcmp(stat.c_str(),"ON ") || !strcmp(stat.c_str(),"OFF") || !strcmp(stat.c_str(),"DISABLED "));
       if (!ready)
 	{
 	  num_not_ready++;
